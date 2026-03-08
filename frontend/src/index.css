@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #1A1A2E;
+  --color-navy-light: #2D2D4E;
+  --color-indigo: #4F46E5;
+  --color-indigo-light: #818CF8;
+  --color-indigo-dark: #3730A3;
+  --color-violet: #7C3AED;
+  --color-violet-light: #A78BFA;
+  --color-teal: #0891B2;
+  --color-teal-light: #67E8F9;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  @apply bg-gray-50 text-gray-900 antialiased;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Agent feed auto-scroll */
+.agent-feed-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Kanban drag styling */
+.kanban-drop-active {
+  @apply border-2 border-dashed border-indigo bg-indigo/5;
+}
+
+/* Pulse animation for agent status */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
