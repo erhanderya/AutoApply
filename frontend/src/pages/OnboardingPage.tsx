@@ -7,17 +7,16 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
+import { buildPreferencesPayload, parseRolesText } from '../lib/preferences';
 import { cvService } from '../services/cv.service';
 import { preferencesService } from '../services/preferences.service';
-import type { CVData, Preferences } from '../types';
+import type { CVData, Preferences, WorkTypePreference } from '../types';
 
 const preferencesSchema = z.object({
-    targetRole: z.string().min(1, 'Target role is required'),
-    location: z.string().min(1, 'Location is required'),
-    salaryMin: z.number().optional(),
-    salaryMax: z.number().optional(),
+    targetRolesText: z.string().min(1, 'At least one target role is required'),
+    location: z.string().optional(),
+    salaryExpectation: z.number().optional(),
     workType: z.enum(['remote', 'hybrid', 'onsite', 'any']),
-    autoApply: z.boolean(),
 });
 
 type PreferencesForm = z.infer<typeof preferencesSchema>;
@@ -39,8 +38,9 @@ export function OnboardingPage() {
     } = useForm<PreferencesForm>({
         resolver: zodResolver(preferencesSchema),
         defaultValues: {
+            targetRolesText: '',
+            location: '',
             workType: 'any',
-            autoApply: false,
         },
     });
 
@@ -48,7 +48,7 @@ export function OnboardingPage() {
 
     const savePrefsMutation = useMutation({
         mutationFn: (data: Preferences) => preferencesService.update(data),
-        onSuccess: () => navigate('/dashboard'),
+        onSuccess: () => navigate('/scout'),
     });
 
     const handleFileUpload = useCallback(async (file: File) => {
@@ -59,7 +59,6 @@ export function OnboardingPage() {
         setUploading(true);
         setUploadProgress(0);
 
-        // Simulate progress
         const interval = setInterval(() => {
             setUploadProgress((p) => Math.min(p + 15, 90));
         }, 200);
@@ -90,13 +89,19 @@ export function OnboardingPage() {
     };
 
     const handleFinish = () => {
-        savePrefsMutation.mutate(formValues as Preferences);
+        const payload = buildPreferencesPayload({
+            targetRoles: parseRolesText(formValues.targetRolesText),
+            location: formValues.location,
+            salaryExpectation: formValues.salaryExpectation,
+            workType: formValues.workType as WorkTypePreference | 'any',
+        });
+
+        savePrefsMutation.mutate(payload);
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="w-full max-w-2xl">
-                {/* Progress */}
                 <div className="flex items-center justify-center gap-2 mb-8">
                     {[1, 2, 3].map((s) => (
                         <div key={s} className="flex items-center gap-2">
@@ -104,7 +109,7 @@ export function OnboardingPage() {
                                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors
                   ${step >= s ? 'bg-indigo text-white' : 'bg-gray-200 text-gray-500'}`}
                             >
-                                {step > s ? '✓' : s}
+                                {step > s ? 'OK' : s}
                             </div>
                             {s < 3 && (
                                 <div className={`w-16 h-0.5 ${step > s ? 'bg-indigo' : 'bg-gray-200'}`} />
@@ -114,11 +119,10 @@ export function OnboardingPage() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-                    {/* Step 1: Upload CV */}
                     {step === 1 && (
                         <div>
                             <h2 className="text-2xl font-bold text-navy mb-2">Upload your CV</h2>
-                            <p className="text-sm text-gray-500 mb-6">We'll parse your skills and experience to find the best matches.</p>
+                            <p className="text-sm text-gray-500 mb-6">We'll parse your skills and experience to prepare Scout.</p>
 
                             <div
                                 onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -127,7 +131,7 @@ export function OnboardingPage() {
                                 className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors
                   ${dragActive ? 'border-indigo bg-indigo/5' : 'border-gray-300 hover:border-indigo/50'}`}
                             >
-                                <div className="text-4xl mb-3">📄</div>
+                                <div className="text-4xl mb-3">CV</div>
                                 <p className="text-sm text-gray-600 mb-2">Drag & drop your CV here</p>
                                 <p className="text-xs text-gray-400 mb-4">Supports PDF and DOCX</p>
                                 <label className="cursor-pointer">
@@ -163,7 +167,7 @@ export function OnboardingPage() {
 
                             {cvData && (
                                 <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-                                    <h4 className="text-sm font-semibold text-green-700 mb-2">✅ CV Parsed Successfully</h4>
+                                    <h4 className="text-sm font-semibold text-green-700 mb-2">CV Parsed Successfully</h4>
                                     <p className="text-sm text-gray-700 mb-2"><strong>Name:</strong> {cvData.name}</p>
                                     <div className="flex flex-wrap gap-1.5 mb-2">
                                         {cvData.skills.map((skill) => (
@@ -176,39 +180,29 @@ export function OnboardingPage() {
                         </div>
                     )}
 
-                    {/* Step 2: Preferences */}
                     {step === 2 && (
                         <form onSubmit={handleSubmit(onPreferencesSubmit)}>
-                            <h2 className="text-2xl font-bold text-navy mb-2">Set your preferences</h2>
-                            <p className="text-sm text-gray-500 mb-6">Tell us what you're looking for.</p>
+                            <h2 className="text-2xl font-bold text-navy mb-2">Set Scout preferences</h2>
+                            <p className="text-sm text-gray-500 mb-6">You can fine-tune these later from the Scout page.</p>
 
                             <div className="space-y-4">
                                 <Input
-                                    label="Target Role"
-                                    placeholder="e.g. Frontend Developer"
-                                    error={errors.targetRole?.message}
-                                    {...register('targetRole')}
+                                    label="Target Roles"
+                                    placeholder="e.g. Frontend Developer, React Engineer"
+                                    error={errors.targetRolesText?.message}
+                                    {...register('targetRolesText')}
                                 />
                                 <Input
                                     label="Location"
-                                    placeholder="e.g. Istanbul, TR or Remote"
-                                    error={errors.location?.message}
+                                    placeholder="e.g. Istanbul, TR"
                                     {...register('location')}
                                 />
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Input
-                                        label="Min Salary (optional)"
-                                        type="number"
-                                        placeholder="80000"
-                                        {...register('salaryMin', { valueAsNumber: true })}
-                                    />
-                                    <Input
-                                        label="Max Salary (optional)"
-                                        type="number"
-                                        placeholder="130000"
-                                        {...register('salaryMax', { valueAsNumber: true })}
-                                    />
-                                </div>
+                                <Input
+                                    label="Salary Expectation (optional)"
+                                    type="number"
+                                    placeholder="90000"
+                                    {...register('salaryExpectation', { valueAsNumber: true })}
+                                />
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Work Type</label>
@@ -224,28 +218,10 @@ export function OnboardingPage() {
                                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                     }`}
                                             >
-                                                {wt.charAt(0).toUpperCase() + wt.slice(1)}
+                                                {wt === 'any' ? 'Skip for now' : wt.charAt(0).toUpperCase() + wt.slice(1)}
                                             </button>
                                         ))}
                                     </div>
-                                </div>
-
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-700">Auto-Apply Mode</p>
-                                        <p className="text-xs text-gray-500">When enabled, agents submit applications automatically.</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setValue('autoApply', !formValues.autoApply)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${formValues.autoApply ? 'bg-indigo' : 'bg-gray-300'
-                                            }`}
-                                    >
-                                        <span
-                                            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${formValues.autoApply ? 'translate-x-5' : ''
-                                                }`}
-                                        />
-                                    </button>
                                 </div>
                             </div>
 
@@ -256,22 +232,19 @@ export function OnboardingPage() {
                         </form>
                     )}
 
-                    {/* Step 3: Confirmation */}
                     {step === 3 && (
                         <div>
                             <h2 className="text-2xl font-bold text-navy mb-2">You're all set!</h2>
-                            <p className="text-sm text-gray-500 mb-6">Review your settings and start AutoApply.</p>
+                            <p className="text-sm text-gray-500 mb-6">Review your settings and continue to Scout.</p>
 
                             <div className="space-y-3">
                                 <div className="bg-gray-50 rounded-xl p-4">
                                     <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Preferences</h4>
                                     <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div><span className="text-gray-500">Target Role:</span> <strong>{formValues.targetRole}</strong></div>
-                                        <div><span className="text-gray-500">Location:</span> <strong>{formValues.location}</strong></div>
-                                        <div><span className="text-gray-500">Work Type:</span> <Badge variant="info">{formValues.workType}</Badge></div>
-                                        <div><span className="text-gray-500">Auto-Apply:</span> <Badge variant={formValues.autoApply ? 'success' : 'neutral'}>{formValues.autoApply ? 'Enabled' : 'Disabled'}</Badge></div>
-                                        {formValues.salaryMin && <div><span className="text-gray-500">Min Salary:</span> <strong>${formValues.salaryMin.toLocaleString()}</strong></div>}
-                                        {formValues.salaryMax && <div><span className="text-gray-500">Max Salary:</span> <strong>${formValues.salaryMax.toLocaleString()}</strong></div>}
+                                        <div><span className="text-gray-500">Target Roles:</span> <strong>{formValues.targetRolesText}</strong></div>
+                                        <div><span className="text-gray-500">Location:</span> <strong>{formValues.location || 'Not set'}</strong></div>
+                                        <div><span className="text-gray-500">Work Type:</span> <Badge variant="info">{formValues.workType === 'any' ? 'Not set' : formValues.workType}</Badge></div>
+                                        {formValues.salaryExpectation && <div><span className="text-gray-500">Salary:</span> <strong>${formValues.salaryExpectation.toLocaleString()}</strong></div>}
                                     </div>
                                 </div>
 
@@ -292,7 +265,7 @@ export function OnboardingPage() {
                             <div className="flex justify-between mt-6">
                                 <Button variant="secondary" onClick={() => setStep(2)}>Back</Button>
                                 <Button onClick={handleFinish} loading={savePrefsMutation.isPending}>
-                                    🚀 Start AutoApply
+                                    Open Scout
                                 </Button>
                             </div>
                         </div>

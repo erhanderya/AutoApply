@@ -14,12 +14,10 @@ export const mockUser: User = {
     email: 'demo@autoapply.ai',
     cvParsed: true,
     preferences: {
-        targetRole: 'Senior Frontend Developer',
+        targetRoles: ['Senior Frontend Developer', 'Frontend Engineer'],
         location: 'Remote',
-        salaryMin: 80000,
-        salaryMax: 130000,
+        salaryExpectation: 80000,
         workType: 'remote',
-        autoApply: false,
     },
 };
 
@@ -28,7 +26,10 @@ export const mockUser: User = {
 export const mockCV: CVData = {
     name: 'Alex Johnson',
     email: 'alex.johnson@email.com',
+    phone: '+1 555 0147',
+    summary: 'Frontend-focused software engineer with strong React, TypeScript, Node.js, and cloud delivery experience.',
     skills: ['React', 'TypeScript', 'Node.js', 'Python', 'PostgreSQL', 'AWS', 'Docker', 'GraphQL'],
+    languages: ['English'],
     experience: [
         { title: 'Senior Frontend Developer', company: 'TechCorp', duration: '2021 – Present' },
         { title: 'Frontend Developer', company: 'StartupXYZ', duration: '2019 – 2021' },

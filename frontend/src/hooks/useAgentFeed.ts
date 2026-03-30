@@ -47,7 +47,8 @@ export function useAgentFeed() {
     useEffect(() => {
         if (isMock || !accessToken) return;
 
-        const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws/agent-feed';
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = import.meta.env.VITE_WS_URL || `${protocol}//${window.location.host}/ws/agent-feed`;
         const manager = new WebSocketManager(wsUrl, accessToken);
         wsRef.current = manager;
 

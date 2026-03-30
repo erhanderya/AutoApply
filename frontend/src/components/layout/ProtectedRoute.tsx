@@ -8,6 +8,11 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
     const accessToken = useAuthStore((s) => s.accessToken);
+    const authBootstrapped = useAuthStore((s) => s.authBootstrapped);
+
+    if (!authBootstrapped) {
+        return null;
+    }
 
     if (!accessToken) {
         return <Navigate to="/login" replace />;

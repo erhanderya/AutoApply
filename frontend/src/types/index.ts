@@ -7,13 +7,13 @@ export interface User {
     cvParsed: boolean;
 }
 
+export type WorkTypePreference = 'remote' | 'hybrid' | 'onsite';
+
 export interface Preferences {
-    targetRole: string;
-    location: string;
-    salaryMin?: number;
-    salaryMax?: number;
-    workType: 'remote' | 'hybrid' | 'onsite' | 'any';
-    autoApply: boolean;
+    targetRoles: string[];
+    location?: string;
+    salaryExpectation?: number;
+    workType?: WorkTypePreference;
 }
 
 export interface LoginRequest {
@@ -28,7 +28,6 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
     access_token: string;
-    refresh_token: string;
     user: User;
 }
 
@@ -41,7 +40,7 @@ export interface Job {
     location: string;
     salaryMin?: number;
     salaryMax?: number;
-    workType: 'remote' | 'hybrid' | 'onsite';
+    workType: WorkTypePreference;
     source: 'remoteok' | 'adzuna';
     applyType: 'email' | 'platform';
     description: string;
@@ -128,12 +127,26 @@ export interface AgentStatusPayload {
     status: 'idle' | 'running' | 'error';
 }
 
+export interface ScoutTriggerResponse {
+    taskId: string;
+    status: string;
+}
+
+export interface ScoutTaskStatus {
+    taskId: string;
+    state: string;
+    result: string | null;
+}
+
 // ─── CV ────────────────────────────────────────────────────────
 
 export interface CVData {
     name: string;
     email: string;
+    phone?: string;
+    summary?: string;
     skills: string[];
-    experience: { title: string; company: string; duration: string }[];
+    languages?: string[];
+    experience: { title: string; company: string; duration: string; description?: string }[];
     education: { degree: string; school: string; year: string }[];
 }

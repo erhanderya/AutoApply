@@ -5,8 +5,10 @@ import { Navbar } from './Navbar';
 
 const pageTitles: Record<string, string> = {
     '/dashboard': 'Dashboard',
+    '/scout': 'Scout',
     '/applications': 'Applications',
     '/analytics': 'Analytics',
+    '/profile': 'Profile',
     '/onboarding': 'Get Started',
 };
 

@@ -10,6 +10,7 @@ export class WebSocketManager {
     private retryCount = 0;
     private maxRetries = 5;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private shouldReconnect = true;
 
     constructor(url: string, token: string) {
         this.url = url;
@@ -17,6 +18,7 @@ export class WebSocketManager {
     }
 
     connect(): void {
+        this.shouldReconnect = true;
         try {
             this.ws = new WebSocket(`${this.url}?token=${this.token}`);
 
@@ -34,6 +36,7 @@ export class WebSocketManager {
             };
 
             this.ws.onclose = () => {
+                if (!this.shouldReconnect) return;
                 this.attemptReconnect();
             };
 
@@ -64,8 +67,10 @@ export class WebSocketManager {
     }
 
     disconnect(): void {
+        this.shouldReconnect = false;
         if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
         }
         this.ws?.close();
         this.ws = null;

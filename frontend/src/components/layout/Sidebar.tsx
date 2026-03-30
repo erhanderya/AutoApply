@@ -17,6 +17,15 @@ const navItems = [
         ),
     },
     {
+        to: '/scout',
+        label: 'Scout',
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.813 15.904L9 18l-2.904.813a1 1 0 01-1.2-1.2L5.71 15l-.814-2.904a1 1 0 011.2-1.2L9 11.71l2.904-.814a1 1 0 011.2 1.2L12.29 15l.813 2.904a1 1 0 01-1.2 1.2L9.813 15.904zM18 13a5 5 0 100-10 5 5 0 000 10zM18 13v8m0 0l-3-3m3 3l3-3" />
+            </svg>
+        ),
+    },
+    {
         to: '/applications',
         label: 'Applications',
         icon: (
@@ -31,6 +40,15 @@ const navItems = [
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+        ),
+    },
+    {
+        to: '/profile',
+        label: 'Profile',
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A11.955 11.955 0 0112 15c2.53 0 4.877.783 6.879 2.117M15 11a3 3 0 11-6 0 3 3 0 016 0zm6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
         ),
     },

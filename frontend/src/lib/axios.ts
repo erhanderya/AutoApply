@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+    baseURL: apiBaseUrl,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -20,34 +22,16 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401 / token refresh
+// Response interceptor: clear invalid sessions
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        const originalRequest = error.config;
+        if (error.response?.status === 401) {
+            useAuthStore.getState().clearAuth();
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
-
-            try {
-                const refreshResponse = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL}/api/auth/refresh`,
-                    {},
-                    { withCredentials: true }
-                );
-
-                const { access_token } = refreshResponse.data;
-                useAuthStore.getState().setAuth(
-                    useAuthStore.getState().user!,
-                    access_token
-                );
-
-                originalRequest.headers.Authorization = `Bearer ${access_token}`;
-                return api(originalRequest);
-            } catch {
-                useAuthStore.getState().clearAuth();
+            const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+            if (!isAuthPage) {
                 window.location.href = '/login';
-                return Promise.reject(error);
             }
         }
 

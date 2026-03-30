@@ -30,7 +30,7 @@ export function useAuth() {
         onSuccess: (response) => {
             setAuth(response.user, response.access_token);
             queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-            navigate('/onboarding');
+            navigate('/dashboard');
         },
     });
 
