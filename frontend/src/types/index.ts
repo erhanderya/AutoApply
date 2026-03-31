@@ -1,5 +1,3 @@
-// ─── User & Auth ───────────────────────────────────────────────
-
 export interface User {
     id: string;
     email: string;
@@ -8,6 +6,8 @@ export interface User {
 }
 
 export type WorkTypePreference = 'remote' | 'hybrid' | 'onsite';
+export type AgentRunStatus = 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+export type ApplicationStatus = 'pending' | 'applied' | 'in_review' | 'interview' | 'offer' | 'rejected';
 
 export interface Preferences {
     targetRoles: string[];
@@ -31,7 +31,15 @@ export interface AuthResponse {
     user: User;
 }
 
-// ─── Jobs ──────────────────────────────────────────────────────
+export interface JobAnalysisPayload {
+    job_id: string;
+    fit_score: number;
+    matched_skills: string[];
+    missing_skills: string[];
+    cv_advice: string[];
+    recommendation: 'apply' | 'skip';
+    rationale: string;
+}
 
 export interface Job {
     id: string;
@@ -43,9 +51,13 @@ export interface Job {
     workType: WorkTypePreference;
     source: 'remoteok' | 'adzuna';
     applyType: 'email' | 'platform';
+    applyUrl: string;
     description: string;
     scrapedAt: string;
-    fitScore?: number;
+    fitScore?: number | null;
+    analysisStatus?: AgentRunStatus | null;
+    writerStatus?: AgentRunStatus | null;
+    applicationId?: string | null;
 }
 
 export interface JobsResponse {
@@ -61,36 +73,33 @@ export interface JobFilters {
     search?: string;
 }
 
-// ─── Applications ──────────────────────────────────────────────
-
-export type ApplicationStatus = 'applied' | 'in_review' | 'interview' | 'offer' | 'rejected';
-
 export interface Application {
     id: string;
     jobId: string;
     job: Job;
     status: ApplicationStatus;
     fitScore: number;
-    cvVariantPath?: string;
-    coverLetterText?: string;
+    analysisPayload?: JobAnalysisPayload | null;
+    analysisStatus: AgentRunStatus;
+    writerStatus: AgentRunStatus;
+    cvVariantText?: string | null;
+    coverLetterText?: string | null;
     submittedAt: string;
     lastUpdatedAt: string;
-    followUpScheduledAt?: string;
+    followUpScheduledAt?: string | null;
+    agentLogs?: AgentLogEntry[];
 }
-
-// ─── Agents ────────────────────────────────────────────────────
 
 export type AgentName = 'scout' | 'analyzer' | 'writer' | 'apply' | 'tracker';
 
 export interface AgentLogEntry {
     id: string;
     applicationId?: string;
+    jobId?: string;
     agentName: AgentName;
     action: string;
     timestamp: string;
 }
-
-// ─── Analytics ─────────────────────────────────────────────────
 
 export interface AnalyticsSummary {
     totalApplications: number;
@@ -102,8 +111,6 @@ export interface AnalyticsSummary {
     fitScoreDistribution: { range: string; count: number }[];
 }
 
-// ─── WebSocket ─────────────────────────────────────────────────
-
 export interface WSEvent {
     type: 'agent_action' | 'application_update' | 'agent_status';
     payload: AgentActionPayload | ApplicationUpdatePayload | AgentStatusPayload;
@@ -113,18 +120,20 @@ export interface AgentActionPayload {
     agentName: AgentName;
     action: string;
     applicationId?: string;
+    jobId?: string;
     timestamp: string;
 }
 
 export interface ApplicationUpdatePayload {
     applicationId: string;
+    jobId?: string;
     newStatus: ApplicationStatus;
     message?: string;
 }
 
 export interface AgentStatusPayload {
     agentName: string;
-    status: 'idle' | 'running' | 'error';
+    status: 'idle' | 'running' | 'error' | 'queued' | 'completed' | 'failed';
 }
 
 export interface ScoutTriggerResponse {
@@ -138,7 +147,19 @@ export interface ScoutTaskStatus {
     result: string | null;
 }
 
-// ─── CV ────────────────────────────────────────────────────────
+export interface AnalyzeJobsResponse {
+    taskId: string;
+    status: string;
+    acceptedJobIds: string[];
+}
+
+export interface JobDetailResponse {
+    job: Job;
+    application: Application | null;
+    analysis: JobAnalysisPayload | null;
+    agentLogs: AgentLogEntry[];
+    cvReady: boolean;
+}
 
 export interface CVData {
     name: string;

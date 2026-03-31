@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -21,6 +21,9 @@ class Application(Base):
         nullable=False,
     )
     fit_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    analysis_payload_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    analysis_status: Mapped[str] = mapped_column(String(50), default="idle", server_default="idle", nullable=False)
+    writer_status: Mapped[str] = mapped_column(String(50), default="idle", server_default="idle", nullable=False)
     cv_variant_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     cover_letter_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

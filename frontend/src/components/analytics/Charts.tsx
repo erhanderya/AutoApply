@@ -4,8 +4,9 @@ import {
 } from 'recharts';
 import type { AnalyticsSummary } from '../../types';
 
-const COLORS = ['#4F46E5', '#EAB308', '#7C3AED', '#059669', '#EF4444'];
+const COLORS = ['#64748B', '#4F46E5', '#EAB308', '#7C3AED', '#059669', '#EF4444'];
 const STATUS_LABELS: Record<string, string> = {
+    pending: 'Draft',
     applied: 'Applied',
     in_review: 'In Review',
     interview: 'Interview',

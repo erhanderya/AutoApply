@@ -1,5 +1,9 @@
+import asyncio
+
+import redis.asyncio as redis_async
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.core.config import settings
 from app.core.security import safe_decode_token
 
 
@@ -18,20 +22,31 @@ async def websocket_agent_feed(websocket: WebSocket) -> None:
         return
 
     await websocket.accept()
-
-    for agent_name in AGENT_NAMES:
-        await websocket.send_json(
-            {
-                "type": "agent_status",
-                "payload": {
-                    "agentName": agent_name,
-                    "status": "idle",
-                },
-            }
-        )
+    redis_client = redis_async.from_url(settings.redis_url, decode_responses=True)
+    pubsub = redis_client.pubsub()
+    channel = f"agent_events:{user_id}"
+    await pubsub.subscribe(channel)
 
     try:
+        for agent_name in AGENT_NAMES:
+            await websocket.send_json(
+                {
+                    "type": "agent_status",
+                    "payload": {
+                        "agentName": agent_name,
+                        "status": "idle",
+                    },
+                }
+            )
+
         while True:
-            await websocket.receive_text()
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            if message and message.get("data"):
+                await websocket.send_text(str(message["data"]))
+            await asyncio.sleep(0.1)
     except WebSocketDisconnect:
         return
+    finally:
+        await pubsub.unsubscribe(channel)
+        await pubsub.aclose()
+        await redis_client.aclose()

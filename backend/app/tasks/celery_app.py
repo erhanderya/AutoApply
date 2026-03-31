@@ -8,7 +8,7 @@ celery_app = Celery(
     "autoapply",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.scout_task"],
+    include=["app.tasks.scout_task", "app.tasks.analysis_task"],
 )
 
 celery_app.conf.beat_schedule = {

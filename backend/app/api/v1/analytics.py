@@ -16,8 +16,6 @@ router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 def _api_status(status_value: ApplicationStatus) -> str:
     if status_value == ApplicationStatus.reviewing:
         return "in_review"
-    if status_value == ApplicationStatus.pending:
-        return "applied"
     return status_value.value
 
 
@@ -32,13 +30,15 @@ def analytics_summary(
 
     total = len(applications)
     interviews = sum(1 for app in applications if app.status == ApplicationStatus.interview)
-    non_applied = sum(1 for app in applications if _api_status(app.status) != "applied")
-    response_rate = round((non_applied / total) * 100) if total else 0
+    responded = sum(1 for app in applications if _api_status(app.status) in {"in_review", "interview", "offer", "rejected"})
+    submitted_total = sum(1 for app in applications if _api_status(app.status) != "pending")
+    response_rate = round((responded / submitted_total) * 100) if submitted_total else 0
 
     fit_scores = [int(app.fit_score) for app in applications if app.fit_score is not None]
     avg_fit_score = round(sum(fit_scores) / len(fit_scores)) if fit_scores else 0
 
     status_counts = {
+        "pending": 0,
         "applied": 0,
         "in_review": 0,
         "interview": 0,

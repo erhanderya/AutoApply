@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { JobFilters } from '../components/jobs/JobFilters';
 import { JobFeed } from '../components/jobs/JobFeed';
@@ -9,17 +9,40 @@ import { useAgentFeed } from '../hooks/useAgentFeed';
 import { jobsService } from '../services/jobs.service';
 import { mockApplications } from '../lib/mockData';
 
+const PAGE_SIZE = 6;
+
 export function DashboardPage() {
+    const queryClient = useQueryClient();
     const [search, setSearch] = useState('');
     const [workType, setWorkType] = useState('any');
+    const [page, setPage] = useState(1);
+    const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
     const { logs } = useAgentFeed();
 
+    useEffect(() => {
+        setPage(1);
+    }, [search, workType]);
+
     const jobsQuery = useQuery({
-        queryKey: ['jobs', { search, workType }],
-        queryFn: () => jobsService.getJobs({ search, workType: workType !== 'any' ? workType : undefined }),
+        queryKey: ['jobs', { search, workType, page, limit: PAGE_SIZE }],
+        queryFn: () =>
+            jobsService.getJobs({
+                page,
+                limit: PAGE_SIZE,
+                search,
+                workType: workType !== 'any' ? workType : undefined,
+            }),
+        placeholderData: (previousData) => previousData,
     });
 
-    // Quick stats (from mock data in mock mode)
+    const analyzeMutation = useMutation({
+        mutationFn: (jobIds: string[]) => jobsService.analyze(jobIds),
+        onSuccess: () => {
+            setSelectedJobIds([]);
+            void queryClient.invalidateQueries({ queryKey: ['jobs'] });
+        },
+    });
+
     const totalApplied = mockApplications.length;
     const thisWeek = mockApplications.filter(
         (a) => Date.now() - new Date(a.submittedAt).getTime() < 7 * 24 * 60 * 60 * 1000
@@ -30,15 +53,51 @@ export function DashboardPage() {
     );
 
     const stats = [
-        { label: 'Total Applied', value: totalApplied, icon: '📩' },
-        { label: 'This Week', value: thisWeek, icon: '📅' },
-        { label: 'Interviews', value: interviews, icon: '🎯' },
-        { label: 'Response Rate', value: `${responseRate}%`, icon: '📊' },
+        { label: 'Total Applied', value: totalApplied, icon: '\uD83D\uDCE9' },
+        { label: 'This Week', value: thisWeek, icon: '\uD83D\uDCC6' },
+        { label: 'Interviews', value: interviews, icon: '\uD83C\uDFAF' },
+        { label: 'Response Rate', value: `${responseRate}%`, icon: '\uD83D\uDCCA' },
     ];
+
+    const totalPages = useMemo(() => {
+        const totalJobs = jobsQuery.data?.total || 0;
+        return Math.max(1, Math.ceil(totalJobs / PAGE_SIZE));
+    }, [jobsQuery.data?.total]);
+
+    useEffect(() => {
+        if (page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [page, totalPages]);
+
+    useEffect(() => {
+        const visibleIds = new Set((jobsQuery.data?.jobs || []).map((job) => job.id));
+        setSelectedJobIds((previous) => previous.filter((jobId) => visibleIds.has(jobId)));
+    }, [jobsQuery.data?.jobs]);
+
+    const toggleSelected = (jobId: string) => {
+        setSelectedJobIds((previous) =>
+            previous.includes(jobId)
+                ? previous.filter((id) => id !== jobId)
+                : [...previous, jobId]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        const visibleIds = (jobsQuery.data?.jobs || []).map((job) => job.id);
+        const allSelected = visibleIds.every((jobId) => selectedJobIds.includes(jobId));
+        setSelectedJobIds(allSelected ? [] : visibleIds);
+    };
+
+    const analyzeSelected = async () => {
+        if (selectedJobIds.length === 0) {
+            return;
+        }
+        await analyzeMutation.mutateAsync(selectedJobIds);
+    };
 
     return (
         <PageWrapper>
-            {/* Quick Stats Bar */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 {stats.map((stat) => (
                     <div
@@ -54,9 +113,7 @@ export function DashboardPage() {
                 ))}
             </div>
 
-            {/* Main Content */}
             <div className="grid lg:grid-cols-5 gap-6">
-                {/* Left — Job Feed (60%) */}
                 <div className="lg:col-span-3">
                     <JobFilters
                         search={search}
@@ -67,10 +124,20 @@ export function DashboardPage() {
                     <JobFeed
                         jobs={jobsQuery.data?.jobs || []}
                         isLoading={jobsQuery.isLoading}
+                        isFetching={jobsQuery.isFetching && !jobsQuery.isLoading}
+                        currentPage={jobsQuery.data?.page || page}
+                        totalPages={totalPages}
+                        totalJobs={jobsQuery.data?.total || 0}
+                        pageSize={PAGE_SIZE}
+                        selectedJobIds={selectedJobIds}
+                        analyzeSelected={() => void analyzeSelected()}
+                        onToggleSelected={toggleSelected}
+                        onToggleSelectAll={toggleSelectAll}
+                        isAnalyzing={analyzeMutation.isPending}
+                        onPageChange={setPage}
                     />
                 </div>
 
-                {/* Right — Agent Activity (40%) */}
                 <div className="lg:col-span-2">
                     <AgentStatusPanel />
                     <AgentFeed logs={logs} />

@@ -35,8 +35,6 @@ def infer_work_type(location: str) -> str:
 def to_api_status(status_value: ApplicationStatus) -> str:
     if status_value == ApplicationStatus.reviewing:
         return "in_review"
-    if status_value == ApplicationStatus.pending:
-        return "applied"
     return status_value.value
 
 
@@ -48,7 +46,17 @@ def from_api_status(status_value: str) -> ApplicationStatus:
     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid status")
 
 
-def to_job_payload(job) -> dict:
+def to_agent_log_payload(log) -> dict:
+    return {
+        "id": str(log.id),
+        "applicationId": str(log.application_id),
+        "agentName": log.agent_name,
+        "action": log.action,
+        "timestamp": log.timestamp.isoformat() if log.timestamp else "",
+    }
+
+
+def to_job_payload(job, application: Application | None = None) -> dict:
     return {
         "id": str(job.id),
         "title": job.title,
@@ -59,9 +67,13 @@ def to_job_payload(job) -> dict:
         "workType": infer_work_type(job.location),
         "source": job.source.value,
         "applyType": job.apply_type.value,
+        "applyUrl": job.apply_url,
         "description": job.description,
         "scrapedAt": job.scraped_at.isoformat() if job.scraped_at else "",
-        "fitScore": None,
+        "fitScore": int(application.fit_score) if application and application.fit_score is not None else None,
+        "analysisStatus": application.analysis_status if application else None,
+        "writerStatus": application.writer_status if application else None,
+        "applicationId": str(application.id) if application else None,
     }
 
 
@@ -69,9 +81,13 @@ def to_application_payload(application: Application) -> dict:
     return {
         "id": str(application.id),
         "jobId": str(application.job_id),
-        "job": to_job_payload(application.job),
+        "job": to_job_payload(application.job, application),
         "status": to_api_status(application.status),
         "fitScore": int(application.fit_score or 0),
+        "analysisPayload": application.analysis_payload_json,
+        "analysisStatus": application.analysis_status,
+        "writerStatus": application.writer_status,
+        "cvVariantText": application.cv_variant_text,
         "coverLetterText": application.cover_letter_text,
         "submittedAt": application.submitted_at.isoformat() if application.submitted_at else application.last_updated_at.isoformat(),
         "lastUpdatedAt": application.last_updated_at.isoformat() if application.last_updated_at else "",
@@ -85,11 +101,11 @@ def get_application_for_user(db: Session, application_id: str, user_id: UUID) ->
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid application id") from exc
 
-    application = db.scalar(
+    application = db.execute(
         select(Application)
-        .options(joinedload(Application.job))
+        .options(joinedload(Application.job), joinedload(Application.agent_logs))
         .where(Application.id == application_uuid, Application.user_id == user_id)
-    )
+    ).unique().scalars().first()
     if application is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
     return application
@@ -116,7 +132,9 @@ def get_application(
     db: Session = Depends(get_db),
 ) -> dict:
     application = get_application_for_user(db, application_id, current_user.id)
-    return to_application_payload(application)
+    payload = to_application_payload(application)
+    payload["agentLogs"] = [to_agent_log_payload(log) for log in sorted(application.agent_logs, key=lambda item: item.timestamp, reverse=True)]
+    return payload
 
 
 @router.post("/{application_id}/approve")

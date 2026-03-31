@@ -10,6 +10,7 @@ interface KanbanBoardProps {
 }
 
 const columns: { key: ApplicationStatus; label: string; color: string }[] = [
+    { key: 'pending', label: 'Draft', color: 'border-slate-400' },
     { key: 'applied', label: 'Applied', color: 'border-indigo' },
     { key: 'in_review', label: 'In Review', color: 'border-yellow-500' },
     { key: 'interview', label: 'Interview', color: 'border-violet' },
@@ -18,6 +19,7 @@ const columns: { key: ApplicationStatus; label: string; color: string }[] = [
 ];
 
 const statusColors: Record<ApplicationStatus, string> = {
+    pending: 'bg-slate-100 text-slate-700',
     applied: 'bg-indigo-100 text-indigo-700',
     in_review: 'bg-yellow-100 text-yellow-700',
     interview: 'bg-violet-100 text-violet-700',

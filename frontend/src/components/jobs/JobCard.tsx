@@ -1,8 +1,11 @@
+import { Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
-import type { Job } from '../../types';
+import type { AgentRunStatus, Job } from '../../types';
 
 interface JobCardProps {
     job: Job;
+    selected: boolean;
+    onToggleSelected: (jobId: string) => void;
 }
 
 function timeAgo(dateStr: string): string {
@@ -14,7 +17,7 @@ function timeAgo(dateStr: string): string {
     return `${days}d ago`;
 }
 
-function getFitScoreBadge(score?: number) {
+function getFitScoreBadge(score?: number | null) {
     if (score === undefined || score === null) {
         return <Badge variant="neutral">Pending</Badge>;
     }
@@ -23,11 +26,27 @@ function getFitScoreBadge(score?: number) {
     return <Badge variant="danger">{score}%</Badge>;
 }
 
-export function JobCard({ job }: JobCardProps) {
+function getRunStatusBadge(status?: AgentRunStatus | null) {
+    if (!status || status === 'idle') return <Badge variant="neutral">Idle</Badge>;
+    if (status === 'completed') return <Badge variant="success">Ready</Badge>;
+    if (status === 'running' || status === 'queued') return <Badge variant="warning">{status}</Badge>;
+    return <Badge variant="danger">Failed</Badge>;
+}
+
+export function JobCard({ job, selected, onToggleSelected }: JobCardProps) {
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between gap-4 mb-2">
                 <div className="flex items-center gap-3">
+                    <label className="inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => onToggleSelected(job.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo focus:ring-indigo"
+                            aria-label={`Select ${job.title}`}
+                        />
+                    </label>
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-light to-violet flex items-center justify-center text-white font-bold text-sm">
                         {job.company[0]}
                     </div>
@@ -56,23 +75,33 @@ export function JobCard({ job }: JobCardProps) {
                 </Badge>
                 {(job.salaryMin || job.salaryMax) && (
                     <span className="text-xs text-gray-500">
-                        ${job.salaryMin?.toLocaleString() || '?'} – ${job.salaryMax?.toLocaleString() || '?'}
+                        ${job.salaryMin?.toLocaleString() || '?'} - ${job.salaryMax?.toLocaleString() || '?'}
                     </span>
                 )}
             </div>
 
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500">Fit Score:</span>
-                    {getFitScoreBadge(job.fitScore)}
+            <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Fit Score</p>
+                    <div className="mt-1">{getFitScoreBadge(job.fitScore)}</div>
                 </div>
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-400">Analyzer</p>
+                    <div className="mt-1">{getRunStatusBadge(job.analysisStatus)}</div>
+                </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+                <p className="max-w-[70%] text-xs text-gray-500">
+                    {job.description}
+                </p>
                 <div className="flex gap-2">
-                    <button className="text-xs font-medium text-indigo hover:text-indigo-dark transition-colors cursor-pointer">
+                    <Link
+                        to={`/jobs/${job.id}`}
+                        className="text-xs font-medium text-indigo hover:text-indigo-dark transition-colors"
+                    >
                         View Details
-                    </button>
-                    <button className="text-xs font-medium text-violet hover:text-violet-light transition-colors cursor-pointer">
-                        Analyze
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>

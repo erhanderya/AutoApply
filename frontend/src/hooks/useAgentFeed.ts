@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { WebSocketManager } from '../lib/websocket';
 import { useAuthStore } from '../store/authStore';
-import type { AgentLogEntry, WSEvent, AgentActionPayload, AgentStatusPayload } from '../types';
+import type { AgentActionPayload, AgentLogEntry, AgentStatusPayload, WSEvent } from '../types';
 import { mockAgentLogs } from '../lib/mockData';
 
 const isMock = import.meta.env.VITE_USE_MOCK === 'true';
@@ -25,6 +25,7 @@ export function useAgentFeed() {
                         agentName: payload.agentName,
                         action: payload.action,
                         applicationId: payload.applicationId,
+                        jobId: payload.jobId,
                         timestamp: payload.timestamp,
                     };
                     setLogs((prev) => [newEntry, ...prev].slice(0, MAX_LOG_ENTRIES));
@@ -32,11 +33,14 @@ export function useAgentFeed() {
                 }
                 case 'application_update': {
                     queryClient.invalidateQueries({ queryKey: ['applications'] });
+                    queryClient.invalidateQueries({ queryKey: ['jobs'] });
+                    queryClient.invalidateQueries({ queryKey: ['job-detail'] });
                     break;
                 }
                 case 'agent_status': {
                     const payload = event.payload as AgentStatusPayload;
-                    setAgentStatus(payload.agentName, payload.status);
+                    const normalizedStatus = payload.status === 'error' ? 'error' : payload.status === 'failed' ? 'error' : payload.status === 'running' ? 'running' : 'idle';
+                    setAgentStatus(payload.agentName, normalizedStatus);
                     break;
                 }
             }

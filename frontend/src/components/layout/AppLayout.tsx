@@ -5,6 +5,7 @@ import { Navbar } from './Navbar';
 
 const pageTitles: Record<string, string> = {
     '/dashboard': 'Dashboard',
+    '/jobs': 'Job Detail',
     '/scout': 'Scout',
     '/applications': 'Applications',
     '/analytics': 'Analytics',
@@ -15,7 +16,7 @@ const pageTitles: Record<string, string> = {
 export function AppLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
-    const title = pageTitles[location.pathname] || 'AutoApply';
+    const title = pageTitles[location.pathname] || (location.pathname.startsWith('/jobs/') ? 'Job Detail' : 'AutoApply');
 
     return (
         <div className="flex h-screen bg-gray-50">

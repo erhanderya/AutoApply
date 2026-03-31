@@ -16,6 +16,7 @@ function daysAgo(dateStr: string): string {
 
 export function ApplicationCard({ application, onViewCoverLetter }: ApplicationCardProps) {
     const fitVariant = application.fitScore > 75 ? 'success' : application.fitScore >= 50 ? 'warning' : 'danger';
+    const subtitle = application.status === 'pending' ? 'Draft analysis' : daysAgo(application.submittedAt);
 
     return (
         <div
@@ -24,14 +25,13 @@ export function ApplicationCard({ application, onViewCoverLetter }: ApplicationC
                 e.dataTransfer.setData('applicationId', application.id);
                 e.dataTransfer.effectAllowed = 'move';
             }}
-            className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md 
-        transition-shadow duration-200 cursor-grab active:cursor-grabbing"
+            className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-grab active:cursor-grabbing"
         >
             <h4 className="text-sm font-semibold text-navy mb-1 truncate">{application.job.title}</h4>
             <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs text-gray-500">{application.job.company}</span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-400">{daysAgo(application.submittedAt)}</span>
+                <span className="text-xs text-gray-400">-</span>
+                <span className="text-xs text-gray-400">{subtitle}</span>
             </div>
             <div className="flex items-center justify-between">
                 <Badge variant={fitVariant}>{application.fitScore}%</Badge>
