@@ -8,6 +8,8 @@ export const jobsService = {
     async getJobs(filters?: JobFilters): Promise<JobsResponse> {
         if (isMock) {
             let filtered = [...mockJobs];
+            const page = filters?.page || 1;
+            const limit = filters?.limit || 20;
 
             if (filters?.workType && filters.workType !== 'any') {
                 filtered = filtered.filter((j) => j.workType === filters.workType);
@@ -21,10 +23,13 @@ export const jobsService = {
                 );
             }
 
+            const start = (page - 1) * limit;
+            const paginatedJobs = filtered.slice(start, start + limit);
+
             return {
-                jobs: filtered,
+                jobs: paginatedJobs,
                 total: filtered.length,
-                page: filters?.page || 1,
+                page,
             };
         }
 
