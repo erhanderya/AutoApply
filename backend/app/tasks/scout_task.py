@@ -48,7 +48,7 @@ def run_scout_for_user(self, user_id: str) -> dict[str, int]:
     try:
         user = db.scalar(select(User).where(User.id == user_id))
         if user is None:
-            return {"new_jobs": 0}
+            return {"new_jobs": 0, "refreshed_jobs": 0}
 
         preferences = user.preferences_json if isinstance(user.preferences_json, dict) else {}
         target_roles = extract_target_roles(preferences)
@@ -57,29 +57,64 @@ def run_scout_for_user(self, user_id: str) -> dict[str, int]:
             user.agent_active = False
             db.add(user)
             db.commit()
-            return {"new_jobs": 0}
+            return {"new_jobs": 0, "refreshed_jobs": 0}
 
         preferences = {**preferences, "targetRoles": target_roles}
 
         fetcher = JobFetcherService()
-        new_jobs = asyncio.run(fetcher.fetch_for_user(preferences))
+        fetched_jobs = asyncio.run(fetcher.fetch_for_user(preferences))
 
-        for job_data in new_jobs:
-            job = Job(
-                title=job_data["title"],
-                company=job_data["company"],
-                location=job_data["location"],
-                source=JobSource(job_data["source"]),
-                apply_url=job_data["apply_url"],
-                apply_type=ApplyType(job_data["apply_type"]),
-                description=job_data["description"],
-                salary_min=job_data.get("salary_min"),
-                salary_max=job_data.get("salary_max"),
-            )
-            db.add(job)
+        apply_urls = [job_data["apply_url"] for job_data in fetched_jobs if job_data.get("apply_url")]
+        existing_jobs = {}
+        if apply_urls:
+            existing_jobs = {
+                job.apply_url: job
+                for job in db.scalars(select(Job).where(Job.apply_url.in_(apply_urls))).all()
+            }
+
+        new_jobs = 0
+        refreshed_jobs = 0
+
+        for job_data in fetched_jobs:
+            existing_job = existing_jobs.get(job_data["apply_url"])
+
+            if existing_job is None:
+                job = Job(
+                    title=job_data["title"],
+                    company=job_data["company"],
+                    location=job_data["location"],
+                    source=JobSource(job_data["source"]),
+                    apply_url=job_data["apply_url"],
+                    apply_type=ApplyType(job_data["apply_type"]),
+                    description=job_data["description"],
+                    salary_min=job_data.get("salary_min"),
+                    salary_max=job_data.get("salary_max"),
+                )
+                db.add(job)
+                new_jobs += 1
+                continue
+
+            previous_description = existing_job.description or ""
+            incoming_description = job_data["description"] or ""
+
+            existing_job.title = job_data["title"]
+            existing_job.company = job_data["company"]
+            existing_job.location = job_data["location"]
+            existing_job.source = JobSource(job_data["source"])
+            existing_job.apply_type = ApplyType(job_data["apply_type"])
+            existing_job.salary_min = job_data.get("salary_min")
+            existing_job.salary_max = job_data.get("salary_max")
+
+            description_updated = False
+            if len(incoming_description) >= len(previous_description) and incoming_description != previous_description:
+                existing_job.description = incoming_description
+                description_updated = True
+
+            if description_updated:
+                refreshed_jobs += 1
 
         db.commit()
-        return {"new_jobs": len(new_jobs)}
+        return {"new_jobs": new_jobs, "refreshed_jobs": refreshed_jobs}
     except Exception as exc:
         db.rollback()
         logger.exception("Scout run failed for user %s", user_id)

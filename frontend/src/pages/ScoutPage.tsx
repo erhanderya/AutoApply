@@ -157,7 +157,6 @@ export function ScoutPage() {
                             <div className="flex items-center justify-between gap-3 mb-3">
                                 <div>
                                     <h3 className="text-lg font-semibold text-navy">Target roles</h3>
-                                    <p className="text-sm text-gray-500">Birden fazla rol ekleyebilirsin. Scout bu rolleri birlikte tarar.</p>
                                 </div>
                                 <Badge variant={draft.targetRoles.length ? 'success' : 'warning'}>
                                     {draft.targetRoles.length ? `${draft.targetRoles.length} selected` : 'Required for Scout'}
@@ -241,7 +240,7 @@ export function ScoutPage() {
                             <div className="flex items-center justify-between gap-3 mb-3">
                                 <div>
                                     <h3 className="text-sm font-semibold text-gray-700">Work type</h3>
-                                    <p className="text-sm text-gray-500">İstersen boş bırak, istersen tek bir çalışma modeli seç.</p>
+                                    <p className="text-sm text-gray-500">You can leave it blank.</p>
                                 </div>
                                 <button
                                     type="button"
