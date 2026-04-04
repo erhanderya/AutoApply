@@ -35,6 +35,15 @@ const navItems = [
         ),
     },
     {
+        to: '/analysis-jobs',
+        label: 'Analysis Jobs',
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-6m3 6V7m3 10v-3m5 7H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v14a2 2 0 01-2 2z" />
+            </svg>
+        ),
+    },
+    {
         to: '/analytics',
         label: 'Analytics',
         icon: (
