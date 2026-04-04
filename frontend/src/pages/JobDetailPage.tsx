@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { AgentFeed } from '../components/agents/AgentFeed';
@@ -25,12 +25,49 @@ function getFitBadge(score?: number | null) {
     return <Badge variant="danger">{score}% fit</Badge>;
 }
 
+function formatDateTime(value?: string | null) {
+    if (!value) return 'Not provided';
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return value;
+    }
+
+    return parsed.toLocaleString();
+}
+
+function formatText(value?: string | null) {
+    if (!value) return 'Not provided';
+    return value;
+}
+
+function formatSalary(value?: number | null) {
+    if (value === undefined || value === null) return 'Not provided';
+
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+    }).format(value);
+}
+
+function formatSalaryRange(min?: number | null, max?: number | null) {
+    if ((min === undefined || min === null) && (max === undefined || max === null)) {
+        return 'Not provided';
+    }
+    if (min !== undefined && min !== null && max !== undefined && max !== null) {
+        return `${formatSalary(min)} - ${formatSalary(max)}`;
+    }
+    if (min !== undefined && min !== null) {
+        return `${formatSalary(min)}+`;
+    }
+    return `Up to ${formatSalary(max)}`;
+}
+
 export function JobDetailPage() {
     const { jobId } = useParams();
     const queryClient = useQueryClient();
     const { logs: liveLogs } = useAgentFeed();
-    const [iframeLoaded, setIframeLoaded] = useState(false);
-    const [showFallback, setShowFallback] = useState(false);
 
     const detailQuery = useQuery({
         queryKey: ['job-detail', jobId],
@@ -45,23 +82,6 @@ export function JobDetailPage() {
             void queryClient.invalidateQueries({ queryKey: ['job-detail', jobId] });
         },
     });
-
-    useEffect(() => {
-        setIframeLoaded(false);
-        setShowFallback(false);
-
-        if (!detailQuery.data?.job.applyUrl) {
-            return;
-        }
-
-        const timeoutId = window.setTimeout(() => {
-            setShowFallback(true);
-        }, 4000);
-
-        return () => {
-            window.clearTimeout(timeoutId);
-        };
-    }, [detailQuery.data?.job.applyUrl]);
 
     const mergedLogs = useMemo(() => {
         const serverLogs = detailQuery.data?.agentLogs || [];
@@ -106,6 +126,36 @@ export function JobDetailPage() {
 
     const { job, application, analysis, cvReady } = detailQuery.data;
     const activeAnalysis = application?.analysisPayload || analysis;
+    const metadataRows = [
+        { label: 'Job ID', value: formatText(job.id) },
+        { label: 'Application ID', value: formatText(job.applicationId) },
+        { label: 'Work Type', value: formatText(job.workType) },
+        { label: 'Source', value: formatText(job.source) },
+        { label: 'Apply Type', value: formatText(job.applyType) },
+        { label: 'Salary Range', value: formatSalaryRange(job.salaryMin, job.salaryMax) },
+        { label: 'Scraped At', value: formatDateTime(job.scrapedAt) },
+        {
+            label: 'Apply URL',
+            value: job.applyUrl ? (
+                <a
+                    href={job.applyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-indigo hover:text-indigo-dark"
+                >
+                    {job.applyUrl}
+                </a>
+            ) : (
+                'Not provided'
+            ),
+        },
+        { label: 'Analysis Status', value: formatText(job.analysisStatus) },
+        { label: 'Writer Status', value: formatText(job.writerStatus) },
+        {
+            label: 'Fit Score',
+            value: job.fitScore === undefined || job.fitScore === null ? 'Not analyzed' : `${job.fitScore}%`,
+        },
+    ];
 
     return (
         <PageWrapper>
@@ -152,53 +202,58 @@ export function JobDetailPage() {
                 <section className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                         <div>
-                            <h2 className="text-lg font-semibold text-navy">Application Page</h2>
-                            <p className="text-sm text-gray-500">Embedded preview when the source site allows it.</p>
+                            <h2 className="text-lg font-semibold text-navy">Job Details</h2>
+                            <p className="text-sm text-gray-500">Oncelikli alanlar one cikarildi, tum metadata asagida sade listede tutuldu.</p>
                         </div>
                         <Badge variant="info">{job.source === 'remoteok' ? 'RemoteOK' : 'Adzuna'}</Badge>
                     </div>
 
-                    <div className="relative min-h-[620px] bg-gray-100">
-                        {job.applyUrl ? (
-                            <>
-                                <iframe
-                                    title={`${job.title} application page`}
-                                    src={job.applyUrl}
-                                    className="h-[620px] w-full"
-                                    onLoad={() => {
-                                        setIframeLoaded(true);
-                                        setShowFallback(false);
-                                    }}
-                                />
-                                {!iframeLoaded && showFallback && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-white/95 p-8">
-                                        <div className="max-w-md text-center">
-                                            <h3 className="text-lg font-semibold text-navy">Embedding may be blocked</h3>
-                                            <p className="mt-2 text-sm text-gray-500">
-                                                Some job boards prevent iframe embedding. Open the page in a new tab to continue the application flow.
-                                            </p>
-                                            <div className="mt-4 flex justify-center">
-                                                <Button
-                                                    type="button"
-                                                    variant="secondary"
-                                                    onClick={() => window.open(job.applyUrl, '_blank', 'noopener,noreferrer')}
-                                                >
-                                                    Open application page
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <div className="flex h-[620px] items-center justify-center">
-                                <EmptyState
-                                    icon={'\uD83D\uDD17'}
-                                    title="No apply URL"
-                                    description="This job does not include an external apply page."
-                                />
+                    <div className="space-y-6 p-5">
+                        <div className="rounded-2xl border border-indigo/15 bg-gradient-to-r from-indigo/5 via-white to-teal/5 px-5 py-5">
+                            <p className="text-xs uppercase tracking-wide text-indigo-dark">Role Snapshot</p>
+                            <h3 className="mt-2 text-2xl font-bold leading-tight text-navy">{job.title || 'Untitled role'}</h3>
+                            <p className="mt-2 text-sm text-gray-600">{job.company || 'Unknown company'} · {job.location || 'Location not provided'}</p>
+                            <div className="mt-4 flex flex-wrap items-center gap-2">
+                                {getFitBadge(job.fitScore)}
+                                {getRunBadge(job.analysisStatus)}
+                                <Badge variant="neutral">{formatText(job.workType)}</Badge>
+                                <Badge variant="neutral">{formatSalaryRange(job.salaryMin, job.salaryMax)}</Badge>
                             </div>
-                        )}
+                        </div>
+
+                        <div>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-navy">Description</h3>
+                                    <p className="text-sm text-gray-500">Pozisyonun ana beklentileri ve kapsamini hizlica gormek icin.</p>
+                                </div>
+                                {job.applyUrl && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => window.open(job.applyUrl, '_blank', 'noopener,noreferrer')}
+                                    >
+                                        Open application page
+                                    </Button>
+                                )}
+                            </div>
+                            <pre className="mt-4 whitespace-pre-wrap border-l-4 border-indigo bg-white/70 pl-4 text-sm leading-7 text-gray-700 font-sans">
+                                {job.description || 'No description provided.'}
+                            </pre>
+                        </div>
+
+                        <div>
+                            <h3 className="text-base font-semibold text-navy">Job Metadata</h3>
+                            <dl className="mt-3 divide-y divide-gray-200 rounded-2xl border border-gray-200 bg-white">
+                                {metadataRows.map((row) => (
+                                    <div key={row.label} className="grid gap-2 px-4 py-3 sm:grid-cols-[180px_1fr] sm:items-start">
+                                        <dt className="text-xs uppercase tracking-wide text-gray-400">{row.label}</dt>
+                                        <dd className="text-sm text-gray-700">{row.value}</dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </div>
                     </div>
                 </section>
 
