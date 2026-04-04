@@ -157,7 +157,7 @@ export function AnalysisJobsPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-navy">Analysis Queue</h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        Gecmiste analiz edilen ve su anda analizde olan tum joblar burada listelenir.
+                        All jobs that were analyzed before, or are being analyzed right now, are listed here.
                     </p>
                 </div>
 
@@ -191,7 +191,7 @@ export function AnalysisJobsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-lg font-semibold text-navy">Currently Running</h2>
-                                <p className="text-sm text-gray-500">Queued ve running durumundaki analizler.</p>
+                                <p className="text-sm text-gray-500">Analyses in queued or running state.</p>
                             </div>
                             <Badge variant="warning">{activeApplications.length}</Badge>
                         </div>
@@ -213,7 +213,7 @@ export function AnalysisJobsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-lg font-semibold text-navy">Analysis History</h2>
-                                <p className="text-sm text-gray-500">Tamamlanan veya hata alan onceki analizler.</p>
+                                <p className="text-sm text-gray-500">Previously completed or failed analyses.</p>
                             </div>
                             <Badge variant="info">{historyApplications.length}</Badge>
                         </div>

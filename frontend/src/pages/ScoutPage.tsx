@@ -211,7 +211,7 @@ export function ScoutPage() {
                                             </button>
                                         ))
                                     ) : (
-                                        <p className="text-sm text-gray-400">Henüz hedef rol eklenmedi.</p>
+                                        <p className="text-sm text-gray-400">No target roles have been added yet.</p>
                                     )}
                                 </div>
                             </div>
@@ -331,7 +331,7 @@ export function ScoutPage() {
                             <div className="rounded-2xl bg-gray-50 px-4 py-3">
                                 <p className="text-gray-500">Last result</p>
                                 <p className="mt-1 font-medium text-navy">
-                                    {statusQuery.data?.result || 'Scout sonucu burada görünecek.'}
+                                    {statusQuery.data?.result || 'Scout results will appear here.'}
                                 </p>
                             </div>
                             {(saveMutation.error || triggerMutation.error || statusQuery.error) && (

@@ -203,7 +203,7 @@ export function JobDetailPage() {
                     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                         <div>
                             <h2 className="text-lg font-semibold text-navy">Job Details</h2>
-                            <p className="text-sm text-gray-500">Oncelikli alanlar one cikarildi, tum metadata asagida sade listede tutuldu.</p>
+                            <p className="text-sm text-gray-500">Priority fields are highlighted up top, with the rest of the metadata kept in a simple list below.</p>
                         </div>
                         <Badge variant="info">{job.source === 'remoteok' ? 'RemoteOK' : 'Adzuna'}</Badge>
                     </div>
@@ -225,7 +225,7 @@ export function JobDetailPage() {
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <h3 className="text-lg font-semibold text-navy">Description</h3>
-                                    <p className="text-sm text-gray-500">Pozisyonun ana beklentileri ve kapsamini hizlica gormek icin.</p>
+                                    <p className="text-sm text-gray-500">Quickly review the role's main responsibilities and scope.</p>
                                 </div>
                                 {job.applyUrl && (
                                     <Button
