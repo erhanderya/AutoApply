@@ -1,0 +1,74 @@
+batch_job_analysis:
+  agent: analyzer
+  description: >
+    Analyze the candidate profile against exactly {job_count} selected jobs.
+
+    Candidate profile JSON:
+    {candidate_profile_json}
+
+    Selected jobs JSON:
+    {jobs_json}
+
+    Rules:
+    - Evaluate every job independently.
+    - Return exactly one result object for every job in the selected jobs JSON.
+    - Copy each job_id exactly as provided in the selected jobs JSON.
+    - Use only information present in the candidate profile and selected jobs.
+    - Never fabricate experience or skills.
+    - Keep CV advice specific to the current role and actionable.
+    - Recommendation should be "apply" only when the candidate is a reasonable target for this role.
+    - Treat {fit_score_threshold} as the strong-fit threshold that would qualify the job for writer generation.
+    - Respond with raw JSON only. Do not use markdown, code fences, commentary, headings, or extra text.
+    - The first character of the response must be "{" and the final character must be "}".
+    - Ensure fit_score is an integer from 0 to 100.
+    - Ensure matched_skills, missing_skills, and cv_advice are arrays of strings.
+    - Ensure recommendation is exactly "apply" or "skip".
+    - Ensure rationale is a plain string.
+  expected_output: >
+    Return exactly one valid JSON object in this shape and nothing else:
+    {
+      "jobs": [
+        {
+          "job_id": "string copied exactly from the input",
+          "fit_score": 0,
+          "matched_skills": ["string"],
+          "missing_skills": ["string"],
+          "cv_advice": ["string"],
+          "recommendation": "apply",
+          "rationale": "string"
+        }
+      ]
+    }
+    The "jobs" array must contain exactly {job_count} items.
+    Do not omit any selected job.
+    Do not wrap the JSON in backticks.
+
+tailored_application_writing:
+  agent: writer
+  description: >
+    Write job-specific application materials using the inputs below.
+
+    Candidate profile JSON:
+    {candidate_profile_json}
+
+    Job JSON:
+    {job_json}
+
+    Analyzer result JSON:
+    {analysis_json}
+
+    Rules:
+    - Be truthful to the candidate profile.
+    - Do not invent technologies, years, metrics, employers, or responsibilities.
+    - Frame missing skills honestly without over-apologizing.
+    - CV summary should be 3 to 4 sentences.
+    - Cover letter should be 3 short paragraphs.
+    - Respond with raw JSON only. Do not use markdown, code fences, commentary, headings, or extra text.
+    - The first character of the response must be "{" and the final character must be "}".
+  expected_output: >
+    Return exactly one valid JSON object in this shape and nothing else:
+    {
+      "cv_summary": "string",
+      "cover_letter": "string"
+    }
+    Do not wrap the JSON in backticks.

@@ -77,6 +77,28 @@ def _job_payload(job: Job) -> dict[str, object]:
     }
 
 
+def _crew_callback_factory(user_id: str, application_id: str | None, job_id: str | None, agent_name: str):
+    def _callback(task_name: str, raw_output: str) -> None:
+        preview = raw_output[:300] if raw_output else ""
+        publish_agent_action(
+            user_id,
+            agent_name,
+            f"CrewAI task '{task_name}' completed",
+            application_id,
+            job_id,
+        )
+        if preview:
+            publish_agent_action(
+                user_id,
+                agent_name,
+                f"{agent_name.title()} output preview: {preview}",
+                application_id,
+                job_id,
+            )
+
+    return _callback
+
+
 def _mark_analysis_failure(db: Session, user_id: str, application_ids: list[str], message: str) -> None:
     for application_id in application_ids:
         application = db.get(Application, _application_uuid(application_id))
@@ -188,7 +210,11 @@ def run_manual_job_analysis(self, user_id: str, job_ids: list[str]) -> dict[str,
             f"Dispatching batch analyzer request for {len(ordered_jobs)} jobs",
         )
 
-        analysis_results = analyze_jobs_batch([_job_payload(job) for job in ordered_jobs], cv_data)
+        analysis_results = analyze_jobs_batch(
+            [_job_payload(job) for job in ordered_jobs],
+            cv_data,
+            callback=_crew_callback_factory(user_id, None, None, "analyzer"),
+        )
 
         queued_writer_application_ids: list[str] = []
         for job in ordered_jobs:
@@ -306,7 +332,12 @@ def run_writer_for_application(self, application_id: str, user_id: str) -> dict[
             str(job.id),
         )
 
-        writing = write_application_materials(_job_payload(job), cv_data, analysis_payload)
+        writing = write_application_materials(
+            _job_payload(job),
+            cv_data,
+            analysis_payload,
+            callback=_crew_callback_factory(user_id, str(application.id), str(job.id), "writer"),
+        )
 
         application.cv_variant_text = writing["cv_summary"]
         application.cover_letter_text = writing["cover_letter"]
