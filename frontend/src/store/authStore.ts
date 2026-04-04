@@ -26,8 +26,6 @@ export const useAuthStore = create<AuthStore>()(
                 scout: 'idle',
                 analyzer: 'idle',
                 writer: 'idle',
-                apply: 'idle',
-                tracker: 'idle',
             },
 
             setAuth: (user, token) => set({ user, accessToken: token }),

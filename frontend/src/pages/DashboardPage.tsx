@@ -6,10 +6,14 @@ import { JobFeed } from '../components/jobs/JobFeed';
 import { AgentStatusPanel } from '../components/agents/AgentStatusPanel';
 import { AgentFeed } from '../components/agents/AgentFeed';
 import { useAgentFeed } from '../hooks/useAgentFeed';
+import { analyticsService } from '../services/analytics.service';
 import { jobsService } from '../services/jobs.service';
-import { mockApplications } from '../lib/mockData';
 
 const PAGE_SIZE = 6;
+
+function sumRecentApplications(values: { date: string; count: number }[]) {
+    return values.slice(-7).reduce((total, item) => total + item.count, 0);
+}
 
 export function DashboardPage() {
     const queryClient = useQueryClient();
@@ -35,6 +39,12 @@ export function DashboardPage() {
         placeholderData: (previousData) => previousData,
     });
 
+    const analyticsQuery = useQuery({
+        queryKey: ['analytics', 'summary'],
+        queryFn: () => analyticsService.getSummary(),
+        placeholderData: (previousData) => previousData,
+    });
+
     const analyzeMutation = useMutation({
         mutationFn: (jobIds: string[]) => jobsService.analyze(jobIds),
         onSuccess: () => {
@@ -43,20 +53,36 @@ export function DashboardPage() {
         },
     });
 
-    const totalApplied = mockApplications.length;
-    const thisWeek = mockApplications.filter(
-        (a) => Date.now() - new Date(a.submittedAt).getTime() < 7 * 24 * 60 * 60 * 1000
-    ).length;
-    const interviews = mockApplications.filter((a) => a.status === 'interview').length;
-    const responseRate = Math.round(
-        (mockApplications.filter((a) => a.status !== 'applied').length / totalApplied) * 100
-    );
-
+    const summary = analyticsQuery.data;
     const stats = [
-        { label: 'Total Applied', value: totalApplied, icon: '\uD83D\uDCE9' },
-        { label: 'This Week', value: thisWeek, icon: '\uD83D\uDCC6' },
-        { label: 'Interviews', value: interviews, icon: '\uD83C\uDFAF' },
-        { label: 'Response Rate', value: `${responseRate}%`, icon: '\uD83D\uDCCA' },
+        {
+            label: 'Total Applications',
+            value: summary?.totalApplications ?? '...',
+            accent: 'from-indigo/15 via-indigo/5 to-white',
+            iconBg: 'bg-indigo/10 text-indigo',
+            helper: 'All tracked application records',
+        },
+        {
+            label: 'This Week',
+            value: summary ? sumRecentApplications(summary.applicationsPerDay) : '...',
+            accent: 'from-teal/15 via-teal/5 to-white',
+            iconBg: 'bg-teal/10 text-teal',
+            helper: 'Applications updated in the last 7 days',
+        },
+        {
+            label: 'Interviews',
+            value: summary?.interviewsScheduled ?? '...',
+            accent: 'from-green-100 via-green-50 to-white',
+            iconBg: 'bg-green-100 text-green-700',
+            helper: 'Interview-stage opportunities',
+        },
+        {
+            label: 'Response Rate',
+            value: summary ? `${summary.responseRate}%` : '...',
+            accent: 'from-amber-100 via-amber-50 to-white',
+            iconBg: 'bg-amber-100 text-amber-700',
+            helper: 'Share of submitted applications with updates',
+        },
     ];
 
     const totalPages = useMemo(() => {
@@ -98,20 +124,31 @@ export function DashboardPage() {
 
     return (
         <PageWrapper>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat) => (
                     <div
                         key={stat.label}
-                        className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center gap-3"
+                        className={`overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br ${stat.accent} px-4 py-4 shadow-sm`}
                     >
-                        <span className="text-xl">{stat.icon}</span>
-                        <div>
-                            <p className="text-lg font-bold text-navy">{stat.value}</p>
-                            <p className="text-xs text-gray-500">{stat.label}</p>
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-xs uppercase tracking-wide text-gray-400">{stat.label}</p>
+                                <p className="mt-3 text-3xl font-bold tracking-tight text-navy">{stat.value}</p>
+                            </div>
+                            <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-semibold ${stat.iconBg}`}>
+                                {stat.label.slice(0, 1)}
+                            </div>
                         </div>
+                        <p className="mt-4 text-sm text-gray-500">{stat.helper}</p>
                     </div>
                 ))}
             </div>
+
+            {analyticsQuery.isError && (
+                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    Dashboard summary could not be refreshed, but the job feed is still available.
+                </div>
+            )}
 
             <div className="grid lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-3">
