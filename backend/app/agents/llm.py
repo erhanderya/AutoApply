@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Any
 
 import httpx
-from crewai import LLM
+from crewai import BaseLLM, LLM
 
 from app.core.config import settings
 
@@ -22,6 +23,68 @@ def _strip_openrouter_prefix(model: str) -> str:
 
 def _with_openrouter_prefix(model: str) -> str:
     return model if model.startswith("openrouter/") else f"openrouter/{model}"
+
+
+def _extract_message_text(content: Any) -> str:
+    if isinstance(content, str):
+        return content
+
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                text = item.get("text")
+                if isinstance(text, str):
+                    parts.append(text)
+        return "\n".join(part for part in parts if part)
+
+    return ""
+
+
+class GroqStandaloneLLM(BaseLLM):
+    def __init__(self, model: str, api_key: str, base_url: str, temperature: float = 0) -> None:
+        super().__init__(model=model, temperature=temperature)
+        self.api_key = api_key
+        self.base_url = base_url.rstrip("/")
+
+    def call(
+        self,
+        messages,
+        tools=None,
+        callbacks=None,
+        available_functions=None,
+    ) -> str:
+        payload = {
+            "model": self.model,
+            "messages": messages if isinstance(messages, list) else [{"role": "user", "content": messages}],
+            "temperature": self.temperature,
+            "response_format": {"type": "json_object"},
+        }
+
+        response = httpx.post(
+            f"{self.base_url}/chat/completions",
+            timeout=30,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+        response.raise_for_status()
+
+        payload = response.json()
+        try:
+            content = payload["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise RuntimeError("Groq returned an unexpected response shape.") from exc
+
+        text = _extract_message_text(content)
+        if not text.strip():
+            raise RuntimeError("Groq returned an empty parser response.")
+        return text
+
+    def supports_function_calling(self) -> bool:
+        return False
 
 
 @lru_cache(maxsize=1)
@@ -84,4 +147,20 @@ def build_openrouter_llm(model_setting: str, temperature: float) -> LLM:
             "HTTP-Referer": settings.openrouter_site_url,
             "X-Title": settings.openrouter_app_title,
         },
+    )
+
+
+def build_groq_cv_parser_llm(model_setting: str, temperature: float = 0) -> BaseLLM:
+    if not settings.groq_api_key:
+        raise CrewAIConfigError("GROQ_API_KEY is not configured.")
+
+    candidates = _candidate_models(model_setting)
+    if not candidates:
+        raise CrewAIConfigError("No CV parser model candidates configured.")
+
+    return GroqStandaloneLLM(
+        model=candidates[0],
+        api_key=settings.groq_api_key,
+        base_url=settings.groq_base_url,
+        temperature=temperature,
     )

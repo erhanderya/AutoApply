@@ -3,11 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 import httpx
-from sqlalchemy import select
 
 from app.core.config import settings
-from app.core.database import SessionLocal
-from app.models.job import Job
 
 
 SCOUT_USER_AGENT = "AutoApply Scout/1.0"
@@ -88,7 +85,7 @@ class RemoteOKSource(BaseJobSource):
             "location": "Remote",
             "apply_url": job.get("url", ""),
             "apply_type": "platform",
-            "description": (job.get("description") or "")[:5000],
+            "description": job.get("description") or "",
             "source": self.source_name,
             "salary_min": job.get("salary_min"),
             "salary_max": job.get("salary_max"),
@@ -147,7 +144,7 @@ class AdzunaSource(BaseJobSource):
             "location": (job.get("location") or {}).get("display_name", "") or "Location not specified",
             "apply_url": apply_url,
             "apply_type": "email" if "mailto:" in apply_url else "platform",
-            "description": (job.get("description") or "")[:5000],
+            "description": job.get("description") or "",
             "source": self.source_name,
             "salary_min": job.get("salary_min"),
             "salary_max": job.get("salary_max"),
@@ -184,15 +181,4 @@ class JobFetcherService:
             seen_urls.add(apply_url)
             unique_jobs.append(job)
 
-        if not unique_jobs:
-            return []
-
-        db = SessionLocal()
-        try:
-            existing_urls = set(
-                db.scalars(select(Job.apply_url).where(Job.apply_url.in_(seen_urls))).all()
-            )
-        finally:
-            db.close()
-
-        return [job for job in unique_jobs if job["apply_url"] not in existing_urls]
+        return unique_jobs
