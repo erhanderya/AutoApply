@@ -137,9 +137,9 @@ export const mockJobs: Job[] = [
         description: 'We need a creative developer who blends design thinking with frontend development.',
         scrapedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         fitScore: null,
-        analysisStatus: 'idle',
+        analysisStatus: 'running',
         writerStatus: 'idle',
-        applicationId: null,
+        applicationId: 'app-5',
     },
 ];
 
@@ -202,6 +202,21 @@ export const mockApplications: Application[] = [
         coverLetterText: null,
         submittedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
         lastUpdatedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        followUpScheduledAt: null,
+    },
+    {
+        id: 'app-5',
+        jobId: 'job-5',
+        job: mockJobs[4],
+        status: 'pending',
+        fitScore: 0,
+        analysisPayload: null,
+        analysisStatus: 'running',
+        writerStatus: 'idle',
+        cvVariantText: null,
+        coverLetterText: null,
+        submittedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+        lastUpdatedAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
         followUpScheduledAt: null,
     },
 ];

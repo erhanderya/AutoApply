@@ -17,6 +17,7 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { AnalysisJobsPage } from './pages/AnalysisJobsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ScoutPage } from './pages/ScoutPage';
 import { JobDetailPage } from './pages/JobDetailPage';
@@ -101,6 +102,7 @@ export default function App() {
           >
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/jobs/:jobId" element={<JobDetailPage />} />
+            <Route path="/analysis-jobs" element={<AnalysisJobsPage />} />
             <Route path="/scout" element={<ScoutPage />} />
             <Route path="/applications" element={<ApplicationsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
