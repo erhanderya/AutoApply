@@ -5,6 +5,7 @@ from app.api.v1.analytics import router as analytics_router
 from app.api.v1.applications import router as applications_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.cv import router as cv_router
+from app.api.v1.interview_prep import router as interview_prep_router
 from app.api.v1.jobs import router as jobs_router
 from app.api.v1.preferences import router as preferences_router
 from app.api.v1.scout import router as scout_router
@@ -32,6 +33,7 @@ app.include_router(auth_router)
 app.include_router(cv_router)
 app.include_router(jobs_router)
 app.include_router(applications_router)
+app.include_router(interview_prep_router)
 app.include_router(preferences_router)
 app.include_router(analytics_router)
 app.include_router(scout_router)

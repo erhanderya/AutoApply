@@ -162,11 +162,17 @@ def update_status(
     db: Session = Depends(get_db),
 ) -> dict:
     application = get_application_for_user(db, application_id, current_user.id)
+    old_status = application.status
     application.status = from_api_status(payload.status)
     application.last_updated_at = datetime.now(timezone.utc)
     db.add(application)
     db.commit()
     db.refresh(application)
+
+    if old_status != ApplicationStatus.interview and application.status == ApplicationStatus.interview:
+        from app.tasks.interview_prep_task import run_interview_prep
+        run_interview_prep.delay(str(application.id), str(current_user.id))
+
     return to_application_payload(application)
 
 

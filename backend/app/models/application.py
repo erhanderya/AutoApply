@@ -38,3 +38,4 @@ class Application(Base):
     job = relationship("Job", back_populates="applications")
     agent_logs = relationship("AgentLog", back_populates="application", cascade="all, delete-orphan")
     follow_ups = relationship("FollowUp", back_populates="application", cascade="all, delete-orphan")
+    interview_prep = relationship("InterviewPrep", back_populates="application", uselist=False, cascade="all, delete-orphan")
