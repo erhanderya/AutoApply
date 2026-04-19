@@ -16,13 +16,13 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 
 _graph_builder = StateGraph(InterviewPrepState)
-_graph_builder.add_node("research", research_node)
-_graph_builder.add_node("questions", question_node)
-_graph_builder.add_node("answers", answer_node)
-_graph_builder.set_entry_point("research")
-_graph_builder.add_edge("research", "questions")
-_graph_builder.add_edge("questions", "answers")
-_graph_builder.add_edge("answers", END)
+_graph_builder.add_node("research_node", research_node)
+_graph_builder.add_node("questions_node", question_node)
+_graph_builder.add_node("answers_node", answer_node)
+_graph_builder.set_entry_point("research_node")
+_graph_builder.add_edge("research_node", "questions_node")
+_graph_builder.add_edge("questions_node", "answers_node")
+_graph_builder.add_edge("answers_node", END)
 
 interview_prep_graph = _graph_builder.compile()
 
