@@ -29,6 +29,10 @@ export function useAgentFeed() {
                         timestamp: payload.timestamp,
                     };
                     setLogs((prev) => [newEntry, ...prev].slice(0, MAX_LOG_ENTRIES));
+
+                    if (payload.agentName === 'interview_coach' && payload.applicationId) {
+                        queryClient.invalidateQueries({ queryKey: ['interview-prep', payload.applicationId] });
+                    }
                     break;
                 }
                 case 'application_update': {

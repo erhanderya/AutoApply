@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
 import type { Application } from '../../types';
 
@@ -25,7 +26,7 @@ export function ApplicationCard({ application, onViewCoverLetter }: ApplicationC
                 e.dataTransfer.setData('applicationId', application.id);
                 e.dataTransfer.effectAllowed = 'move';
             }}
-            className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-grab active:cursor-grabbing"
+            className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-grab active:cursor-grabbing flex flex-col h-full"
         >
             <h4 className="text-sm font-semibold text-navy mb-1 truncate">{application.job.title}</h4>
             <div className="flex items-center gap-2 mb-2">
@@ -33,16 +34,30 @@ export function ApplicationCard({ application, onViewCoverLetter }: ApplicationC
                 <span className="text-xs text-gray-400">-</span>
                 <span className="text-xs text-gray-400">{subtitle}</span>
             </div>
-            <div className="flex items-center justify-between">
+            
+            <div className="flex-1"></div>
+            
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
                 <Badge variant={fitVariant}>{application.fitScore}%</Badge>
-                {application.coverLetterText && (
-                    <button
-                        onClick={() => onViewCoverLetter(application)}
-                        className="text-xs text-indigo hover:text-indigo-dark font-medium transition-colors cursor-pointer"
-                    >
-                        Cover Letter
-                    </button>
-                )}
+                
+                <div className="flex items-center gap-3">
+                    {application.status === 'interview' && (
+                        <Link
+                            to={`/applications/${application.id}/interview-prep`}
+                            className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
+                        >
+                            Interview Prep
+                        </Link>
+                    )}
+                    {application.coverLetterText && (
+                        <button
+                            onClick={() => onViewCoverLetter(application)}
+                            className="text-xs text-indigo hover:text-indigo-dark font-medium transition-colors cursor-pointer"
+                        >
+                            Cover Letter
+                        </button>
+                    )}
+                </div>
             </div>
             {application.followUpScheduledAt && (
                 <div className="mt-2 text-[11px] text-orange-500 flex items-center gap-1">

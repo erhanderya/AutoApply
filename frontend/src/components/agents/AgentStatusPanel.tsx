@@ -19,6 +19,12 @@ const agents = [
         accent: 'bg-violet/10 text-violet',
         description: 'Generates CV variants and cover letters.',
     },
+    {
+        name: 'interview_coach',
+        label: 'Interview Coach',
+        accent: 'bg-pink-500/10 text-pink-500',
+        description: 'Prepares company research, questions and STAR answers.',
+    },
 ];
 
 const statusStyles: Record<string, { bg: string; text: string; label: string }> = {

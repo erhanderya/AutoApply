@@ -1,4 +1,5 @@
 import { useState, type DragEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Application, ApplicationStatus } from '../../types';
 import { ApplicationCard } from './ApplicationCard';
 import { CoverLetterModal } from './CoverLetterModal';
@@ -28,6 +29,7 @@ const statusColors: Record<ApplicationStatus, string> = {
 };
 
 export function KanbanBoard({ applications, onStatusChange, onSaveCoverLetter }: KanbanBoardProps) {
+    const navigate = useNavigate();
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
     const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
@@ -41,12 +43,18 @@ export function KanbanBoard({ applications, onStatusChange, onSaveCoverLetter }:
         setDragOverColumn(null);
     };
 
-    const handleDrop = async (e: DragEvent, status: ApplicationStatus) => {
+    const handleDrop = async (e: DragEvent, targetStatus: ApplicationStatus) => {
         e.preventDefault();
         setDragOverColumn(null);
         const applicationId = e.dataTransfer.getData('applicationId');
         if (applicationId) {
-            await onStatusChange(applicationId, status);
+            const currentApp = applications.find(a => a.id === applicationId);
+            const wasNotInterview = currentApp && currentApp.status !== 'interview';
+            await onStatusChange(applicationId, targetStatus);
+            
+            if (wasNotInterview && targetStatus === 'interview') {
+                navigate(`/applications/${applicationId}/interview-prep`);
+            }
         }
     };
 

@@ -90,7 +90,45 @@ export interface Application {
     agentLogs?: AgentLogEntry[];
 }
 
-export type AgentName = 'scout' | 'analyzer' | 'writer' | 'apply' | 'tracker';
+export type AgentName = 'scout' | 'analyzer' | 'writer' | 'apply' | 'tracker' | 'interview_coach';
+
+export interface CompanyResearch {
+    company_summary: string;
+    culture_keywords: string[];
+    products_or_services: string[];
+    recent_news: string[];
+    sources: string[];
+}
+
+export interface InterviewQuestion {
+    id: number;
+    category: 'behavioral' | 'technical' | 'culture_fit' | 'role_specific';
+    question: string;
+    focus: string;
+}
+
+export interface StarAnswer {
+    question_id: number;
+    situation: string;
+    task: string;
+    action: string;
+    result: string;
+    talking_points: string[];
+}
+
+export type InterviewPrepStatus = 'idle' | 'queued' | 'running' | 'completed' | 'failed';
+
+export interface InterviewPrep {
+    id: string;
+    applicationId: string;
+    status: InterviewPrepStatus;
+    companyResearch: CompanyResearch | null;
+    questions: InterviewQuestion[];
+    answers: StarAnswer[];
+    errorMessage: string | null;
+    createdAt: string;
+    lastUpdatedAt: string;
+}
 
 export interface AgentLogEntry {
     id: string;

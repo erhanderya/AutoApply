@@ -21,6 +21,7 @@ import { AnalysisJobsPage } from './pages/AnalysisJobsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ScoutPage } from './pages/ScoutPage';
 import { JobDetailPage } from './pages/JobDetailPage';
+import { InterviewPrepPage } from './pages/InterviewPrepPage';
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="/analysis-jobs" element={<AnalysisJobsPage />} />
             <Route path="/scout" element={<ScoutPage />} />
             <Route path="/applications" element={<ApplicationsPage />} />
+            <Route path="/applications/:applicationId/interview-prep" element={<InterviewPrepPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>

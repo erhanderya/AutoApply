@@ -6,6 +6,7 @@ const agentConfig: Record<string, { icon: string; color: string }> = {
     writer: { icon: '✍️', color: 'text-violet' },
     apply: { icon: '📨', color: 'text-green-600' },
     tracker: { icon: '📈', color: 'text-orange-500' },
+    interview_coach: { icon: '🎤', color: 'text-pink-500' },
 };
 
 interface AgentLogItemProps {

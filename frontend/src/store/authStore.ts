@@ -26,6 +26,7 @@ export const useAuthStore = create<AuthStore>()(
                 scout: 'idle',
                 analyzer: 'idle',
                 writer: 'idle',
+                interview_coach: 'idle',
             },
 
             setAuth: (user, token) => set({ user, accessToken: token }),

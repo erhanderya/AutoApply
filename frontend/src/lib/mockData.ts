@@ -232,6 +232,70 @@ export const mockAgentLogs: AgentLogEntry[] = [
     { id: 'log-8', agentName: 'scout', action: 'Found 5 new matching jobs in the last scan', timestamp: new Date(Date.now() - 1000).toISOString() },
 ];
 
+import type { InterviewPrep } from '../types';
+
+export const mockInterviewPrep = (applicationId: string): InterviewPrep => ({
+    id: `prep-${applicationId}`,
+    applicationId,
+    status: 'completed',
+    companyResearch: {
+        company_summary: 'CloudScale is a fast-growing B2B SaaS startup providing scalable cloud infrastructure management tools. They recently raised a $25M Series B to expand their developer experience and platform integrations.',
+        culture_keywords: ['innovation', 'developer-first', 'remote-friendly', 'fast-paced', 'data-driven'],
+        products_or_services: ['CloudScale Dashboard', 'Infra API', 'Serverless Deployments'],
+        recent_news: ['CloudScale raises $25M Series B led by Tech Ventures', 'New integration with AWS announced at re:Invent'],
+        sources: ['https://example.com/about', 'https://techcrunch.com/cloudscale']
+    },
+    questions: [
+        {
+            id: 1,
+            category: 'technical',
+            question: 'Can you walk me through a time when you had to optimize a slow-rendering React dashboard with large datasets?',
+            focus: 'They need someone who can handle complex UI states and performance profiling.'
+        },
+        {
+            id: 2,
+            category: 'behavioral',
+            question: 'Tell me about a time you disagreed with a product manager or designer on a feature implementation. How did you handle it?',
+            focus: 'Cross-functional collaboration in a fast-paced environment.'
+        },
+        {
+            id: 3,
+            category: 'role_specific',
+            question: 'How would you approach migrating our current React dashboard to use Server Components while maintaining backward compatibility?',
+            focus: 'Modern React architecture and migration strategies.'
+        }
+    ],
+    answers: [
+        {
+            question_id: 1,
+            situation: 'At TechCorp, our analytics dashboard was taking over 4 seconds to render when displaying 10,000+ rows of transactional data, leading to customer complaints.',
+            task: 'I needed to reduce the time-to-interactive to under 1 second without removing functionality.',
+            action: 'I implemented React Window for virtualization to only render visible rows, memoized expensive calculation components with useMemo, and paginated the initial data fetch using React Query.',
+            result: 'Load time dropped to 0.8 seconds (an 80% improvement), and customer support tickets regarding dashboard speed fell to zero.',
+            talking_points: ['Virtualization (React Window)', 'Memoization (useMemo/useCallback)', 'Data fetching optimization']
+        },
+        {
+            question_id: 2,
+            situation: 'At StartupXYZ, a designer proposed a complex animation for a critical user flow that I knew would cause jank on mobile devices.',
+            task: 'I needed to communicate the technical constraints while still delivering a great user experience.',
+            action: 'I prototyped the proposed animation to show the performance drop, then built a simpler CSS-only alternative. I presented both to the designer, explaining the trade-offs.',
+            result: 'The designer appreciated the data-driven approach and agreed to the CSS alternative, which shipped on time and performed smoothly across all devices.',
+            talking_points: ['Prototyping', 'Data-driven feedback', 'Compromise']
+        },
+        {
+            question_id: 3,
+            situation: 'Based on my experience migrating a legacy application at WebAgency to Next.js...',
+            task: 'The goal is a smooth transition without disrupting current users.',
+            action: 'I would start by identifying leaf components that don\'t require client-side interactivity and convert them first. I\'d use a feature flag to route a percentage of traffic to the new RSC pages while monitoring error rates.',
+            result: 'This incremental approach ensures stability while gradually improving initial page load times and reducing the client-side JavaScript bundle.',
+            talking_points: ['Incremental migration', 'Feature flags', 'Leaf components first']
+        }
+    ],
+    errorMessage: null,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    lastUpdatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString()
+});
+
 export const mockAnalytics: AnalyticsSummary = {
     totalApplications: 4,
     responseRate: 67,
