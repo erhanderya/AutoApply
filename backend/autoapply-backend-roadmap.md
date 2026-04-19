@@ -594,7 +594,7 @@ analyzer_llm = LLM(
 )
 
 writer_llm = LLM(
-    model="openrouter/openai/gpt-4o-mini",
+    model="openrouter/google/gemma-4-31b-it:free",
     api_key=settings.OPENROUTER_API_KEY,
     base_url="https://openrouter.ai/api/v1",
     extra_headers={
