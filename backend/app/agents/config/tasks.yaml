@@ -11,6 +11,8 @@ batch_job_analysis:
 
     Rules:
     - Evaluate every job independently.
+    - Before scoring each job, call the MCP tool `job.extract_requirements` with that job's description, title, and company.
+    - Use the tool output as the structured requirements evidence for that job.
     - Return exactly one result object for every job in the selected jobs JSON.
     - Copy each job_id exactly as provided in the selected jobs JSON.
     - Use only information present in the candidate profile and selected jobs.
@@ -24,6 +26,7 @@ batch_job_analysis:
     - Ensure matched_skills, missing_skills, and cv_advice are arrays of strings.
     - Ensure recommendation is exactly "apply" or "skip".
     - Ensure rationale is a plain string.
+    - Ensure requirements is exactly the object returned by `job.extract_requirements`, normalized to the expected shape.
   expected_output: >
     Return exactly one valid JSON object in this shape and nothing else:
     {
@@ -35,7 +38,14 @@ batch_job_analysis:
           "missing_skills": ["string"],
           "cv_advice": ["string"],
           "recommendation": "apply",
-          "rationale": "string"
+          "rationale": "string",
+          "requirements": {
+            "must_have": ["string"],
+            "nice_to_have": ["string"],
+            "tech_stack": ["string"],
+            "seniority": "senior",
+            "keywords": ["string"]
+          }
         }
       ]
     }
@@ -59,6 +69,7 @@ tailored_application_writing:
 
     Rules:
     - Be truthful to the candidate profile.
+    - Use analyzer requirements when present to tailor wording toward the role's must-have and preferred qualifications.
     - Do not invent technologies, years, metrics, employers, or responsibilities.
     - Frame missing skills honestly without over-apologizing.
     - CV summary should be 3 to 4 sentences.

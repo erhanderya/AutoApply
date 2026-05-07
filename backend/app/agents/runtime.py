@@ -1,23 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import sys
 from typing import Any, Callable
 
 from crewai import Agent, Crew, Process, Task
 from pydantic import BaseModel
 
 from app.agents.config_loader import get_agent_config, get_task_config
+from app.agents.errors import CrewAIRuntimeError
 from app.agents.llm import CrewAIConfigError, build_openrouter_llm
 from app.agents.schemas import BatchJobAnalysisOutput, TailoredWritingOutput
 from app.core.config import settings
 
 
 TaskCallback = Callable[[str, str], None] | None
-
-
-class CrewAIRuntimeError(RuntimeError):
-    pass
+_MCP_DEVNULL_ERRLOG = None
 
 
 def _extract_json_fragment(raw: str) -> str:
@@ -103,7 +103,7 @@ def _iter_output_candidates(value: Any, seen: set[int] | None = None):
             yield from _iter_output_candidates(item, seen)
 
 
-def _build_agent(config_name: str, llm) -> Agent:
+def _build_agent(config_name: str, llm, tools: list[Any] | None = None) -> Agent:
     config = get_agent_config(config_name)
     return Agent(
         role=str(config["role"]),
@@ -112,6 +112,7 @@ def _build_agent(config_name: str, llm) -> Agent:
         allow_delegation=bool(config.get("allow_delegation", False)),
         verbose=bool(config.get("verbose", False)),
         llm=llm,
+        tools=tools or [],
     )
 
 
@@ -182,10 +183,11 @@ def _run_single_task_crew(
     llm,
     output_model: type[BaseModel],
     callback: TaskCallback = None,
+    tools: list[Any] | None = None,
 ) -> BaseModel:
     task_config = _render_template(get_task_config(task_name), task_context)
     configured_agent_name = str(task_config.pop("agent", agent_name))
-    agent = _build_agent(configured_agent_name, llm)
+    agent = _build_agent(configured_agent_name, llm, tools=tools)
 
     def _task_callback(task_output) -> None:
         if callback is None:
@@ -249,6 +251,87 @@ def _run_single_task_crew(
     raise CrewAIRuntimeError(f"CrewAI task '{task_name}' completed without a structured output.")
 
 
+def _mcp_server_environment() -> dict[str, str]:
+    backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    existing_pythonpath = os.environ.get("PYTHONPATH")
+    pythonpath = backend_root if not existing_pythonpath else f"{backend_root}{os.pathsep}{existing_pythonpath}"
+    return {**os.environ, "PYTHONPATH": pythonpath, "PYTHONUNBUFFERED": "1"}
+
+
+def _mcp_server_script_path() -> str:
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "mcp", "server.py"))
+
+
+def _safe_mcp_errlog():
+    global _MCP_DEVNULL_ERRLOG
+
+    for candidate in (getattr(sys, "__stderr__", None), getattr(sys, "stderr", None)):
+        if candidate is None:
+            continue
+        try:
+            candidate.fileno()
+            return candidate
+        except Exception:
+            continue
+
+    if _MCP_DEVNULL_ERRLOG is None or _MCP_DEVNULL_ERRLOG.closed:
+        _MCP_DEVNULL_ERRLOG = open(os.devnull, "w", encoding="utf-8")
+    return _MCP_DEVNULL_ERRLOG
+
+
+def _patch_mcpadapt_stdio_errlog() -> None:
+    import mcpadapt.core as mcpadapt_core
+
+    original_stdio_client = mcpadapt_core.stdio_client
+    if getattr(original_stdio_client, "_autoapply_errlog_patched", False):
+        return
+
+    def _stdio_client_with_safe_errlog(serverparams):
+        return original_stdio_client(serverparams, errlog=_safe_mcp_errlog())
+
+    _stdio_client_with_safe_errlog._autoapply_errlog_patched = True
+    mcpadapt_core.stdio_client = _stdio_client_with_safe_errlog
+
+
+def _run_single_task_crew_with_mcp_tools(
+    *,
+    agent_name: str,
+    task_name: str,
+    task_context: dict[str, Any],
+    llm,
+    output_model: type[BaseModel],
+    callback: TaskCallback = None,
+) -> BaseModel:
+    try:
+        from crewai_tools import MCPServerAdapter
+        from mcp import StdioServerParameters
+        _patch_mcpadapt_stdio_errlog()
+    except ImportError as exc:
+        raise CrewAIRuntimeError("MCP dependencies are not installed. Install crewai-tools[mcp] and mcp.") from exc
+
+    server_params = StdioServerParameters(
+        command=sys.executable,
+        args=[_mcp_server_script_path()],
+        env=_mcp_server_environment(),
+    )
+
+    try:
+        with MCPServerAdapter(server_params, connect_timeout=60) as mcp_tools:
+            return _run_single_task_crew(
+                agent_name=agent_name,
+                task_name=task_name,
+                task_context=task_context,
+                llm=llm,
+                output_model=output_model,
+                callback=callback,
+                tools=list(mcp_tools),
+            )
+    except CrewAIRuntimeError:
+        raise
+    except Exception as exc:
+        raise CrewAIRuntimeError(f"MCP tool connection failed for task '{task_name}': {exc}") from exc
+
+
 def run_batch_analysis_crew(
     jobs: list[dict[str, Any]],
     cv_data: dict[str, Any],
@@ -271,7 +354,7 @@ def run_batch_analysis_crew(
             ),
             "jobs_json": json.dumps(jobs, ensure_ascii=True),
         }
-        return _run_single_task_crew(
+        return _run_single_task_crew_with_mcp_tools(
             agent_name="analyzer",
             task_name="batch_job_analysis",
             task_context=task_context,

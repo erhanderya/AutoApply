@@ -73,7 +73,7 @@ def _job_payload(job: Job) -> dict[str, object]:
         "company": job.company,
         "location": job.location,
         "apply_url": job.apply_url,
-        "description": (job.description or "")[:1500],
+        "description": (job.description or "")[:6000],
     }
 
 

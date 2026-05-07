@@ -12,8 +12,8 @@ celery_app = Celery(
 )
 
 celery_app.conf.beat_schedule = {
-    "scout-every-5-minutes": {
+    "scout-daily-at-9": {
         "task": "scout.run_all_users",
-        "schedule": crontab(minute="*/5"),
+        "schedule": crontab(hour=9, minute=0),
     }
 }

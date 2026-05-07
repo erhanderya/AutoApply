@@ -1,0 +1,2 @@
+class CrewAIRuntimeError(RuntimeError):
+    pass

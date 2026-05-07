@@ -2,12 +2,6 @@ import { useAuthStore } from '../../store/authStore';
 
 const agents = [
     {
-        name: 'scout',
-        label: 'Scout',
-        accent: 'bg-indigo/10 text-indigo',
-        description: 'Finds and refreshes matching jobs.',
-    },
-    {
         name: 'analyzer',
         label: 'Analyzer',
         accent: 'bg-teal/10 text-teal',

@@ -2,26 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.agents.runtime import CrewAIRuntimeError, run_batch_analysis_crew, run_writer_crew
+from app.agents.errors import CrewAIRuntimeError
+from app.agents.schemas import clean_string_list
 
 
 class LLMResponseError(RuntimeError):
     pass
-
-
-def _clean_string_list(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    cleaned: list[str] = []
-    seen: set[str] = set()
-    for item in value:
-        text = str(item).strip()
-        lowered = text.lower()
-        if not text or lowered in seen:
-            continue
-        seen.add(lowered)
-        cleaned.append(text)
-    return cleaned
 
 
 def analyze_jobs_batch(
@@ -30,6 +16,8 @@ def analyze_jobs_batch(
     callback=None,
 ) -> dict[str, dict[str, Any]]:
     try:
+        from app.agents.runtime import run_batch_analysis_crew
+
         output = run_batch_analysis_crew(jobs, cv_data, callback=callback)
     except CrewAIRuntimeError as exc:
         raise LLMResponseError(str(exc)) from exc
@@ -39,11 +27,12 @@ def analyze_jobs_batch(
         normalized[item.job_id] = {
             "job_id": item.job_id,
             "fit_score": int(item.fit_score),
-            "matched_skills": _clean_string_list(item.matched_skills),
-            "missing_skills": _clean_string_list(item.missing_skills),
-            "cv_advice": _clean_string_list(item.cv_advice),
+            "matched_skills": clean_string_list(item.matched_skills),
+            "missing_skills": clean_string_list(item.missing_skills),
+            "cv_advice": clean_string_list(item.cv_advice),
             "recommendation": item.recommendation,
             "rationale": item.rationale.strip(),
+            "requirements": item.requirements.model_dump(),
         }
 
     missing_ids = [job["job_id"] for job in jobs if job["job_id"] not in normalized]
@@ -60,6 +49,8 @@ def write_application_materials(
     callback=None,
 ) -> dict[str, str]:
     try:
+        from app.agents.runtime import run_writer_crew
+
         output = run_writer_crew(job, cv_data, analysis_payload, callback=callback)
     except CrewAIRuntimeError as exc:
         raise LLMResponseError(str(exc)) from exc
